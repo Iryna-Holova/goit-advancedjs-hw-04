@@ -1,9 +1,8 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
-import ImagesAPI from './images-api';
 import { galleryMarkup } from './templates';
-import { showError, showSuccess } from './toaster';
-const imagesAPI = new ImagesAPI();
+import { showError, showSuccess, showWarning } from './toaster';
+import ImagesAPI from './images-api';
 
 const elements = {
   search: document.querySelector('#search-form'),
@@ -21,9 +20,11 @@ const options = {
 const observer = new IntersectionObserver(handleLoadMore, options);
 
 const lightbox = new SimpleLightbox('.gallery a', {
-  // captionSelector: 'self',
-  // captionsData: 'data-caption',
+  captionSelector: 'self',
+  captionsData: 'data-caption',
 });
+
+const imagesAPI = new ImagesAPI();
 
 async function handleSearch(event) {
   event.preventDefault();
@@ -61,13 +62,16 @@ async function handleSearch(event) {
 
 async function handleLoadMore(entries) {
   if (entries[0]?.isIntersecting ?? false) {
-    console.log(entries[0]);
     try {
       const { hits, totalHits, page } = await imagesAPI.fetchPictures();
-
       renderGallery(hits);
-      showSuccess(`Hooray! We found ${totalHits} images.`);
-      if (page > Math.ceil(totalHits / 40)) observer.unobserve(elements.guard);
+
+      if (page > Math.ceil(totalHits / 40)) {
+        showWarning(
+          "We're sorry, but you've reached the end of search results."
+        );
+        observer.unobserve(elements.guard);
+      }
     } catch (err) {
       console.log(err);
       showError('Something went wrong :(');
